@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criador de Personagens RPG - Ordem Paranormal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'rpg-dark': '#1e293b',
+                        'rpg-light': '#f8fafc',
+                        'rpg-accent': '#ef4444',
+                        'rpg-secondary': '#64748b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* Estilo base para os botões de incremento/decremento */
+        .attr-button {
+            transition: all 0.15s ease-in-out;
+            @apply w-8 h-8 flex items-center justify-center text-xl font-extrabold rounded-full bg-rpg-accent text-rpg-light shadow-md hover:bg-red-700 active:scale-95 disabled:bg-rpg-secondary disabled:cursor-not-allowed disabled:opacity-50;
+        }
+
+        /* Estilo para a barra de progresso do Nex */
+        #nex-bar {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-rpg-light text-rpg-dark font-sans p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl border-t-8 border-rpg-accent">
+        
+        <h1 class="text-3xl md:text-4xl font-extrabold text-rpg-dark mb-2 text-center">
+            Criação de Personagem
+        </h1>
+        <p class="text-lg text-rpg-secondary mb-8 text-center border-b pb-4">
+            Preencha os detalhes e distribua seus pontos.
+        </p>
+
+        <!-- Seção 1: Informações Básicas e Foto (AGORA COM UPLOAD LOCAL) -->
+        <div class="space-y-6 mb-10">
+            <!-- Nome -->
+            <div>
+                <label for="charName" class="block text-sm font-bold text-rpg-dark mb-1">Nome do Personagem</label>
+                <input type="text" id="charName" placeholder="Ex: Alexsander" class="w-full p-3 border border-rpg-secondary/30 rounded-lg focus:ring-rpg-accent focus:border-rpg-accent transition duration-150">
+            </div>
+            
+            <!-- Bloco de Upload de Foto Local -->
+            <div>
+                <label for="photo-upload" class="block text-sm font-bold text-rpg-dark mb-2">Foto do Personagem (Upload Local)</label>
+                <input 
+                    type="file" 
+                    id="photo-upload" 
+                    accept="image/png, image/jpeg, image/gif" 
+                    onchange="handleFileUpload(event)"
+                    class="block w-full text-sm text-gray-900 
+                           file:mr-4 file:py-2 file:px-4
+                           file:rounded-lg file:border-0
+                           file:text-sm file:font-semibold
+                           file:bg-rpg-accent/10 file:text-rpg-accent
+                           hover:file:bg-rpg-accent/20 transition duration-150"
+                />
+                <!-- Prévia da Imagem -->
+                <div id="image-preview-container" class="mt-4 flex justify-center items-center w-32 h-32 border-2 border-dashed border-rpg-secondary/50 rounded-lg overflow-hidden bg-rpg-dark/5 mx-auto">
+                    <span id="placeholder-text" class="text-rpg-secondary text-xs text-center p-1">Sem foto</span>
+                    <img id="image-preview" src="#" alt="Prévia" class="hidden w-full h-full object-cover">
+                </div>
+                <p id="photo-error-message" class="text-red-500 text-xs text-center hidden mt-1">Erro ao carregar a imagem.</p>
+            </div>
+
+            <!-- História / Origem -->
+            <div>
+                <label for="charHistory" class="block text-sm font-bold text-rpg-dark mb-1">História e Origem</label>
+                <textarea id="charHistory" rows="5" placeholder="Descreva a vida pregressa, motivações e o momento atual do seu personagem." class="w-full p-3 border border-rpg-secondary/30 rounded-lg focus:ring-rpg-accent focus:border-rpg-accent transition duration-150"></textarea>
+            </div>
+        </div>
+
+        <!-- Seção 2: Atributos -->
+        <div class="mb-10 p-6 bg-rpg-dark/5 rounded-xl border border-rpg-dark/10">
+            <h2 class="text-2xl font-bold text-rpg-dark mb-4 border-b border-rpg-dark/20 pb-2 flex justify-between items-center">
+                Atributos
+                <span id="pointsRemaining" class="text-rpg-accent text-xl font-extrabold">4</span>
+                <span class="text-sm font-normal text-rpg-secondary">Pontos Restantes</span>
+            </h2>
+            <p class="text-sm text-rpg-secondary mb-4">Cada atributo começa com 1. Você tem 4 pontos para distribuir, com máximo de 3 em cada atributo.</p>
+
+            <div id="attributes" class="space-y-3">
+                <!-- Atributos: FOR, VIG, AGI, INT, PRE -->
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="forca">
+                    <span class="font-semibold w-1/3">FORÇA (FOR)</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="attr-button decrease" onclick="updateAttribute('forca', -1)" disabled>-</button>
+                        <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
+                        <button class="attr-button increase" onclick="updateAttribute('forca', 1)">+</button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="vigor">
+                    <span class="font-semibold w-1/3">VIGOR (VIG)</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="attr-button decrease" onclick="updateAttribute('vigor', -1)" disabled>-</button>
+                        <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
+                        <button class="attr-button increase" onclick="updateAttribute('vigor', 1)">+</button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="agilidade">
+                    <span class="font-semibold w-1/3">AGILIDADE (AGI)</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="attr-button decrease" onclick="updateAttribute('agilidade', -1)" disabled>-</button>
+                        <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
+                        <button class="attr-button increase" onclick="updateAttribute('agilidade', 1)">+</button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="intelecto">
+                    <span class="font-semibold w-1/3">INTELECTO (INT)</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="attr-button decrease" onclick="updateAttribute('intelecto', -1)" disabled>-</button>
+                        <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
+                        <button class="attr-button increase" onclick="updateAttribute('intelecto', 1)">+</button>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="presenca">
+                    <span class="font-semibold w-1/3">PRESENÇA (PRE)</span>
+                    <div class="flex items-center space-x-3">
+                        <button class="attr-button decrease" onclick="updateAttribute('presenca', -1)" disabled>-</button>
+                        <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
+                        <button class="attr-button increase" onclick="updateAttribute('presenca', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Seção 2.5: Classes e Estatísticas Derivadas -->
+        <div class="p-6 bg-rpg-dark/5 rounded-xl border border-rpg-dark/10 mb-10">
+            <h2 class="text-2xl font-bold text-rpg-dark mb-4 border-b border-rpg-dark/20 pb-2">
+                Classe e Estatísticas Iniciais
+            </h2>
+            
+            <!-- Seleção de Classe -->
+            <div class="mb-4">
+                <p class="font-semibold text-rpg-dark mb-2">Escolha sua Classe:</p>
+                <div class="flex flex-wrap gap-4">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="charClass" value="Especialista" checked onchange="selectClass('Especialista')" class="form-radio text-rpg-accent">
+                        <span class="ml-2 font-bold">Especialista</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="charClass" value="Combatente" onchange="selectClass('Combatente')" class="form-radio text-rpg-accent">
+                        <span class="ml-2 font-bold">Combatente</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="charClass" value="Ocultista" onchange="selectClass('Ocultista')" class="form-radio text-rpg-accent">
+                        <span class="ml-2 font-bold">Ocultista</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Estatísticas Derivadas (PV, PE, SAN) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-center">
+                <div class="bg-white p-3 rounded-lg shadow-md border-b-2 border-green-500">
+                    <p class="text-sm font-semibold text-rpg-secondary">Pontos de Vida (PV)</p>
+                    <p id="hp-value" class="text-3xl font-extrabold text-green-600">--</p>
+                    <p id="hp-scale" class="text-xs text-green-500 italic">--</p>
+                </div>
+                <div class="bg-white p-3 rounded-lg shadow-md border-b-2 border-red-500">
+                    <p class="text-sm font-semibold text-rpg-secondary">Pontos de Esforço (PE)</p>
+                    <p id="pe-value" class="text-3xl font-extrabold text-red-600">--</p>
+                    <p id="pe-scale" class="text-xs text-red-500 italic">--</p>
+                </div>
+                <div class="bg-white p-3 rounded-lg shadow-md border-b-2 border-indigo-500">
+                    <p class="text-sm font-semibold text-rpg-secondary">Sanidade (SAN)</p>
+                    <p id="san-value" class="text-3xl font-extrabold text-indigo-600">--</p>
+                    <p id="san-scale" class="text-xs text-indigo-500 italic">--</p>
+                </div>
+            </div>
+            
+            <p class="text-sm font-semibold text-rpg-dark mt-6 mb-2">Proficiências:</p>
+            <p id="class-proficiencies" class="text-sm ml-2 bg-white p-2 rounded border border-rpg-dark/10">--</p>
+        </div>
+
+        <!-- Seção 3: NEX e Miniformulário -->
+        <div class="p-6 bg-rpg-dark/5 rounded-xl border border-rpg-dark/10 mb-10">
+            <h2 class="text-2xl font-bold text-rpg-dark mb-4 border-b border-rpg-dark/20 pb-2">
+                Nível de Exposição Paranormal (NEX)
+            </h2>
+            <p class="text-sm text-rpg-secondary mb-4">Responda o miniformulário para calcular seu NEX inicial (Máximo 5%).</p>
+
+            <!-- Barra de NEX -->
+            <div class="mb-6">
+                <div class="text-right text-lg font-bold" id="nex-display">NEX: 0%</div>
+                <div class="w-full bg-gray-200 rounded-full h-3.5 shadow-inner">
+                    <div id="nex-bar" class="bg-rpg-accent h-3.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Miniformulário de NEX -->
+            <div id="nex-form" class="space-y-4 text-sm">
+                <!-- Pergunta 1 -->
+                <div class="p-3 bg-white rounded-lg shadow-sm">
+                    <p class="font-semibold text-rpg-dark mb-2">1. Você já teve algum contato direto com o Paranormal (Entidade, Criatura ou Objeto Esotérico)?</p>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="q1" value="0" checked onchange="calculateNex()" class="form-radio text-rpg-accent">
+                            <span class="ml-2">Não</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="q1" value="3" onchange="calculateNex()" class="form-radio text-rpg-accent">
+                            <span class="ml-2">Sim, um contato marcante. (+3%)</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Pergunta 2 -->
+                <div class="p-3 bg-white rounded-lg shadow-sm">
+                    <p class="font-semibold text-rpg-dark mb-2">2. Você acredita ou já pesquisou ativamente sobre o Outro Lado?</p>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="q2" value="0" checked onchange="calculateNex()" class="form-radio text-rpg-accent">
+                            <span class="ml-2">Não</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="q2" value="2" onchange="calculateNex()" class="form-radio text-rpg-accent">
+                            <span class="ml-2">Sim, acredito ou pesquisei bastante. (+2%)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <p class="text-xs text-rpg-secondary mt-4">NEX Máximo Limitado a 5%.</p>
+        </div>
+        
+        <!-- Seção 3.5: Perícias (Bônus Não Treinado) -->
+        <div class="p-6 bg-rpg-dark/5 rounded-xl border border-rpg-dark/10 mb-10">
+            <h2 class="text-2xl font-bold text-rpg-dark mb-4 border-b border-rpg-dark/20 pb-2">
+                Perícias (Bônus Não Treinado)
+            </h2>
+            <p class="text-sm text-rpg-secondary mb-4">Seu bônus inicial (Atributo - 1) para cada perícia. Esse é o bônus antes de aplicar os 5 pontos de treino.</p>
+
+            <div id="skills-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1 text-sm">
+                <!-- Conteúdo das perícias será inserido aqui pelo JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Seção 3.7: Perícias Treinadas -->
+        <div class="p-6 bg-rpg-dark/5 rounded-xl border border-rpg-dark/10 mb-10">
+            <h2 class="text-2xl font-bold text-rpg-dark mb-4 border-b border-rpg-dark/20 pb-2">
+                Escolha de Perícias Treinadas
+            </h2>
+            <p class="text-sm text-rpg-secondary mb-2">Perícias obrigatórias:</p>
+            <div id="mandatory-skills-list" class="flex flex-wrap gap-2 mb-4">
+                <!-- Perícias obrigatórias/opcionais da classe -->
+            </div>
+            
+            <p class="text-sm text-rpg-secondary mb-2">Perícias livres: Você tem <span id="skill-count-display" class="font-bold text-rpg-accent">--</span> escolhas livres pelo seu Intelecto. Restantes: <span id="skills-remaining-display" class="font-bold text-rpg-accent">--</span></p>
+
+            <div id="free-skills-list" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-sm max-h-64 overflow-y-auto p-2 border rounded bg-white">
+                <!-- Checkboxes para as perícias livres -->
+            </div>
+            
+            <p class="text-xs text-rpg-secondary mt-4">Lista de Treinadas (revisão): <span id="selected-trained-skills-display" class="font-mono text-rpg-dark">--</span></p>
+        </div>
+
+
+        <!-- Seção 4: Ficha Final e Exportação -->
+        <div class="text-center space-y-4">
+            <button onclick="generateSheet()" class="px-8 py-3 bg-rpg-accent text-rpg-light font-bold text-lg rounded-xl shadow-lg hover:bg-red-700 transition duration-200 transform hover:scale-[1.02] active:scale-95">
+                Gerar Ficha Resumo
+            </button>
+            <button onclick="exportCharacter()" id="export-button" class="px-6 py-3 bg-rpg-dark text-rpg-light font-bold text-lg rounded-xl shadow-lg hover:bg-rpg-secondary transition duration-200 transform hover:scale-[1.02] active:scale-95 hidden">
+                Exportar para Gerenciador (.rpgdata)
+            </button>
+            <p id="export-message" class="text-sm text-rpg-secondary hidden">Clique em "Exportar" para baixar o arquivo JSON que pode ser importado no Gerenciador de Personagens.</p>
+        </div>
+
+        <div id="final-sheet" class="mt-10 p-6 bg-rpg-dark/90 text-rpg-light rounded-xl shadow-inner hidden">
+            <h2 class="text-2xl font-extrabold text-rpg-accent mb-4 text-center">Ficha de Personagem</h2>
+            <div id="sheet-content" class="space-y-4">
+                <!-- Conteúdo da ficha será inserido aqui pelo JavaScript -->
+            </div>
+            <p class="text-xs text-center mt-6 text-rpg-secondary">Ficha gerada para fins de resumo.</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Variável para armazenar a imagem em Base64 para exportação
+        let characterPhotoBase64 = null;
+        
+        // Objeto para rastrear os valores iniciais e a distribuição de pontos
+        const attributes = {
+            forca: 1,
+            vigor: 1,
+            agilidade: 1,
+            intelecto: 1,
+            presenca: 1
+        };
+        let points = 4; // Pontos para distribuir
+        const MAX_ATTRIBUTE_VALUE = 3;
+        const MAX_NEX = 5;
+        let currentClass = 'Especialista'; // Classe selecionada
+        let trainedSkills = []; // Lista final das perícias treinadas
+
+        // Mapeamento de Atributos para abreviação (usado no display de perícias)
+        const attrAbreviations = {
+            forca: 'FOR', vigor: 'VIG', agilidade: 'AGI', intelecto: 'INT', presenca: 'PRE',
+        };
+
+        // Regras das Classes (mantidas as regras originais)
+        const classRules = {
+            Especialista: {
+                hpBase: 16, hpScale: 3, peBase: 3, peScale: 3, sanBase: 16, sanScale: 4,
+                skillBase: 7, skillAttr: 'intelecto', mandatorySkills: [], 
+                proficiencies: ["Arma Simples", "Proficiências da Origem (a definir)"]
+            },
+            Combatente: {
+                hpBase: 20, hpScale: 4, peBase: 2, peScale: 2, sanBase: 12, sanScale: 3,
+                skillBase: 1, skillAttr: 'intelecto', 
+                mandatorySkills: [
+                    { group: "Ataque", choices: ["Luta", "Pontaria"] },
+                    { group: "Defesa", choices: ["Fortitude", "Reflexos"] }
+                ],
+                proficiencies: ["Arma Simples", "Armas Táticas", "Proteções Leves"]
+            },
+            Ocultista: {
+                hpBase: 12, hpScale: 2, peBase: 4, peScale: 4, sanBase: 20, sanScale: 5,
+                skillBase: 3, skillAttr: 'intelecto', mandatorySkills: ["Ocultismo", "Vontade"],
+                proficiencies: ["Arma Simples"]
+            }
+        };
+
+        // Mapeamento de Perícias para o Atributo Base (mantido o original)
+        const skillMapping = {
+            Acrobacia: 'agilidade', Adestramento: 'presenca', Artes: 'presenca', Atletismo: 'forca', Atualidades: 'intelecto',
+            Ciências: 'intelecto', Crime: 'agilidade', Diplomacia: 'presenca', Enganação: 'presenca', Fortitude: 'vigor',
+            Furtividade: 'agilidade', Iniciativa: 'agilidade', Intimidação: 'presenca', Intuição: 'presenca', Investigação: 'intelecto',
+            Luta: 'forca', Medicina: 'intelecto', Ocultismo: 'intelecto', Percepção: 'presenca', Pilotagem: 'agilidade',
+            Pontaria: 'agilidade', Profissão: 'intelecto', Reflexos: 'agilidade', Religião: 'presenca', Sobrevivência: 'vigor',
+            Tática: 'intelecto', Tecnologia: 'intelecto', Vontade: 'presenca',
+        };
+        
+        // NOVO: Função para carregar e exibir a foto localmente
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const imagePreview = document.getElementById('image-preview');
+            const placeholderText = document.getElementById('placeholder-text');
+            const errorMessage = document.getElementById('photo-error-message');
+
+            // Limpa o estado e a mensagem de erro
+            errorMessage.classList.add('hidden');
+            characterPhotoBase64 = null; 
+
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    errorMessage.textContent = 'Erro: Selecione um arquivo de imagem válido (PNG, JPEG, GIF).';
+                    errorMessage.classList.remove('hidden');
+                    imagePreview.style.display = 'none';
+                    placeholderText.style.display = 'block';
+                    return;
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    // Armazena a imagem em Base64 para inclusão nos dados do personagem
+                    characterPhotoBase64 = e.target.result; 
+                    
+                    imagePreview.setAttribute('src', characterPhotoBase64);
+                    imagePreview.style.display = 'block'; 
+                    placeholderText.style.display = 'none'; 
+                    
+                    // Atualiza a ficha se já estiver visível
+                    if (!document.getElementById('final-sheet').classList.contains('hidden')) {
+                        generateSheet();
+                    }
+                };
+
+                reader.onerror = () => {
+                    errorMessage.textContent = 'Erro ao ler o arquivo.';
+                    errorMessage.classList.remove('hidden');
+                    imagePreview.style.display = 'none';
+                    placeholderText.style.display = 'block';
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+                placeholderText.style.display = 'block';
+            }
+        }
+
+        // Função principal para atualizar atributos (mantida a original)
+        function updateAttribute(attrName, change) {
+            const currentValue = attributes[attrName];
+            const newValue = currentValue + change;
+            
+            if (newValue < 1 || newValue > MAX_ATTRIBUTE_VALUE) return;
+            if (change > 0 && points <= 0) return;
+            
+            attributes[attrName] = newValue;
+            points -= change;
+
+            document.getElementById('pointsRemaining').textContent = points;
+            
+            const attrElement = document.querySelector(`[data-attr="${attrName}"] .attribute-value`);
+            attrElement.textContent = newValue;
+            attrElement.dataset.value = newValue;
+
+            updateButtons();
+            updateSkills(); 
+            updateDerivedStats();
+        }
+        
+        // Função para manipular a troca de classe (mantida a original)
+        function selectClass(className) {
+            currentClass = className;
+            updateDerivedStats();
+            updateTrainedSkillsUI();
+        }
+
+        // Função para atualizar as estatísticas derivadas (PV, PE, SAN) (mantida a original)
+        function updateDerivedStats() {
+            const rules = classRules[currentClass];
+            const vig = attributes.vigor;
+            const pre = attributes.presenca;
+            
+            // As regras de PV, PE e SAN são para 5% de NEX (primeiro nível)
+            const hp = rules.hpBase + vig; 
+            const pe = rules.peBase + pre;
+            const san = rules.sanBase;
+
+            // Display stats
+            document.getElementById('hp-value').textContent = hp;
+            document.getElementById('pe-value').textContent = pe;
+            document.getElementById('san-value').textContent = san;
+
+            // Display scaling
+            document.getElementById('hp-scale').textContent = `(+${rules.hpScale} PV/Nível)`;
+            document.getElementById('pe-scale').textContent = `(+${rules.peScale} PE/Nível)`;
+            document.getElementById('san-scale').textContent = `(+${rules.sanScale} SAN/Nível)`;
+            
+            // Display proficiencies
+            document.getElementById('class-proficiencies').textContent = rules.proficiencies.join(', ');
+            
+            updateTrainedSkillsUI();
+        }
+
+        // Função para atualizar o estado dos botões de incremento/decremento (mantida a original)
+        function updateButtons() {
+            for (const attrName in attributes) {
+                const attrDiv = document.querySelector(`[data-attr="${attrName}"]`);
+                const increaseButton = attrDiv.querySelector('.increase');
+                const decreaseButton = attrDiv.querySelector('.decrease');
+                const currentValue = attributes[attrName];
+
+                increaseButton.disabled = points <= 0 || currentValue >= MAX_ATTRIBUTE_VALUE;
+                decreaseButton.disabled = currentValue <= 1;
+            }
+        }
+
+        // Função para calcular o NEX com base no formulário (mantida a original)
+        function calculateNex() {
+            let totalNex = 0;
+            
+            const q1Value = parseInt(document.querySelector('input[name="q1"]:checked').value);
+            const q2Value = parseInt(document.querySelector('input[name="q2"]:checked').value);
+            
+            totalNex = q1Value + q2Value;
+            totalNex = Math.min(totalNex, MAX_NEX); // Limite a 5%
+            
+            document.getElementById('nex-display').textContent = `NEX: ${totalNex}%`;
+            document.getElementById('nex-bar').style.width = `${(totalNex / MAX_NEX) * 100}%`;
+        }
+
+        // Função para calcular e atualizar o valor das perícias não treinadas (mantida a original)
+        function updateSkills() {
+            const skillsContainer = document.getElementById('skills-list');
+            skillsContainer.innerHTML = ''; 
+
+            for (const [skillName, attrKey] of Object.entries(skillMapping)) {
+                const attrValue = attributes[attrKey];
+                const bonusValue = attrValue - 1; 
+                const attrAbrev = attrAbreviations[attrKey];
+                
+                const skillItem = `
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/50 hover:bg-white transition duration-100 shadow-sm">
+                        <span class="font-medium text-rpg-dark truncate">${skillName}</span>
+                        <div class="flex items-center space-x-2">
+                           <span class="text-xs font-semibold text-rpg-secondary uppercase">${attrAbrev}</span>
+                           <span class="text-lg font-bold w-6 text-right text-rpg-accent" data-skill-bonus="${skillName}">+${bonusValue}</span>
+                        </div>
+                    </div>
+                `;
+                skillsContainer.innerHTML += skillItem;
+            }
+        }
+        
+        // Função para gerar a interface de seleção de perícias treinadas (mantida a original)
+        function updateTrainedSkillsUI() {
+            const rules = classRules[currentClass];
+            const int = attributes.intelecto;
+            const skillCount = rules.skillBase + int;
+            
+            document.getElementById('skill-count-display').textContent = skillCount;
+            
+            const mandatoryHtmlContainer = document.getElementById('mandatory-skills-list');
+            mandatoryHtmlContainer.innerHTML = '';
+            
+            // 1. Renderizar Perícias Obrigatórias e Escolhas Fixas
+            const mandatoryOrChoiceSkills = [];
+            rules.mandatorySkills.forEach(item => {
+                if (typeof item === 'string') {
+                    // Perícia fixa (Ocultismo, Vontade)
+                    mandatoryHtmlContainer.innerHTML += `<span class="bg-rpg-accent/10 text-rpg-dark font-medium px-2 py-1 rounded">${item} (Fixo)</span>`;
+                    mandatoryOrChoiceSkills.push(item);
+                } else if (item.choices) {
+                    // Grupo de escolha (Luta ou Pontaria)
+                    const choiceId = `mandatory-${item.group.toLowerCase()}`;
+                    const radios = item.choices.map(choice => `
+                        <label class="inline-flex items-center mr-4">
+                            <input type="radio" name="${choiceId}" value="${choice}" onchange="updateTrainedSkillsList()" class="form-radio text-rpg-accent" required>
+                            <span class="ml-1">${choice}</span>
+                        </label>
+                    `).join('');
+                    
+                    const div = document.createElement('div');
+                    div.className = 'p-2 border border-rpg-dark/20 rounded bg-white shadow-sm';
+                    div.innerHTML = `<p class="font-semibold text-rpg-accent mb-1">${item.group} (Escolha 1):</p>${radios}`;
+                    mandatoryHtmlContainer.appendChild(div);
+                    mandatoryOrChoiceSkills.push(...item.choices);
+                }
+            });
+
+            // 2. Renderizar Checkboxes para Perícias Livres
+            const allSkills = Object.keys(skillMapping);
+            const freeSkills = allSkills.filter(skill => !mandatoryOrChoiceSkills.includes(skill));
+            
+            const freeSkillCheckboxes = freeSkills.map(skill => `
+                <label class="flex items-center p-1 cursor-pointer hover:bg-rpg-accent/10 rounded">
+                    <input type="checkbox" name="freeSkill" value="${skill}" onchange="updateTrainedSkillsList()" class="form-checkbox text-rpg-accent">
+                    <span class="ml-2">${skill}</span>
+                </label>
+            `).join('');
+            
+            document.getElementById('free-skills-list').innerHTML = freeSkillCheckboxes;
+            
+            updateTrainedSkillsList();
+        }
+
+
+        // Função para compilar a lista final de perícias treinadas e aplicar limites (mantida a original)
+        function updateTrainedSkillsList() {
+            trainedSkills = [];
+            const rules = classRules[currentClass];
+            const int = attributes.intelecto;
+            const maxFreeChoices = rules.skillBase + int;
+            let currentFreeCount = 0;
+            
+            // 1. Adicionar Perícias Obrigatórias Fixas
+            rules.mandatorySkills.filter(s => typeof s === 'string').forEach(s => trainedSkills.push(s));
+
+            // 2. Adicionar Perícias Obrigatórias de Escolha (verifica se foi selecionado)
+            rules.mandatorySkills.filter(s => s.choices).forEach(item => {
+                const choiceId = `mandatory-${item.group.toLowerCase()}`;
+                const selected = document.querySelector(`input[name="${choiceId}"]:checked`);
+                if (selected) {
+                    trainedSkills.push(selected.value);
+                }
+            });
+
+            // 3. Tratar as Escolhas Livres
+            const freeCheckboxes = document.querySelectorAll('input[name="freeSkill"]');
+            const selectedFreeSkills = [];
+
+            freeCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedFreeSkills.push(checkbox.value);
+                }
+            });
+            
+            // Aplica o limite e ajusta o estado dos checkboxes
+            if (selectedFreeSkills.length > maxFreeChoices) {
+                const skillsToKeep = selectedFreeSkills.slice(0, maxFreeChoices);
+                const skillsToUncheck = selectedFreeSkills.slice(maxFreeChoices);
+                
+                skillsToUncheck.forEach(skillName => {
+                    document.querySelector(`input[name="freeSkill"][value="${skillName}"]`).checked = false;
+                });
+                
+                currentFreeCount = maxFreeChoices;
+                trainedSkills.push(...skillsToKeep);
+            } else {
+                currentFreeCount = selectedFreeSkills.length;
+                trainedSkills.push(...selectedFreeSkills);
+            }
+            
+            // 4. Atualizar estado dos Checkboxes (desabilitar se o máximo for atingido)
+            freeCheckboxes.forEach(checkbox => {
+                checkbox.disabled = false; // Re-habilita por padrão
+                
+                if (currentFreeCount >= maxFreeChoices && !checkbox.checked) {
+                    checkbox.disabled = true;
+                }
+            });
+
+            // 5. Atualizar contador
+            const remaining = maxFreeChoices - currentFreeCount;
+            document.getElementById('skills-remaining-display').textContent = Math.max(0, remaining);
+            
+            // 6. Atualizar a lista de revisão
+            document.getElementById('selected-trained-skills-display').textContent = trainedSkills.join(', ') || 'Nenhuma selecionada.';
+            
+            // 7. Re-gerar ficha se estiver visível
+            if (!document.getElementById('final-sheet').classList.contains('hidden')) {
+                generateSheet();
+            }
+        }
+
+        // Função para coletar todos os dados e estruturar o objeto do personagem
+        function collectCharacterData() {
+            const rules = classRules[currentClass];
+            const vig = attributes.vigor;
+            const pre = attributes.presenca;
+            const nexText = document.getElementById('nex-display').textContent.split(': ')[1];
+            const nexValue = parseInt(nexText.replace('%', ''));
+
+            const allSkills = {};
+            for (const [skillName, attrKey] of Object.entries(skillMapping)) {
+                allSkills[skillName] = {
+                    attr: attrAbreviations[attrKey],
+                    base: attributes[attrKey] - 1,
+                    trained: trainedSkills.includes(skillName),
+                    // Bônus final = Base + 5 se treinado, caso contrário, Base
+                    bonus: trainedSkills.includes(skillName) ? (attributes[attrKey] - 1 + 5) : (attributes[attrKey] - 1)
+                };
+            }
+
+            // NOVO: Usa a string Base64 se estiver disponível, senão usa um placeholder
+            const finalPhotoUrl = characterPhotoBase64 || 'https://placehold.co/150x150/1e293b/f8fafc?text=Foto';
+
+            return {
+                name: document.getElementById('charName').value.trim() || "Personagem Sem Nome",
+                photoUrl: finalPhotoUrl, // Agora é a string Base64 ou URL do placeholder
+                history: document.getElementById('charHistory').value.trim() || "História não preenchida.",
+                // Estatísticas principais para serem gerenciadas
+                stats: {
+                    nex: nexValue,
+                    class: currentClass,
+                    pv_max: rules.hpBase + vig,
+                    pe_max: rules.peBase + pre,
+                    san_max: rules.sanBase,
+                    pv_current: rules.hpBase + vig, // Começa com o máximo
+                    pe_current: rules.peBase + pre,
+                    san_current: rules.sanBase,
+                },
+                attributes: attributes,
+                proficiencies: rules.proficiencies,
+                skills: allSkills,
+            };
+        }
+
+        // Função para gerar a ficha resumo final (mantida a original, mas usando a foto Base64)
+        function generateSheet() {
+            const charData = collectCharacterData();
+            
+            const sheetContent = document.getElementById('sheet-content');
+            const { name, photoUrl, history, stats, attributes, proficiencies, skills } = charData;
+
+            // HTML para Atributos
+            const attrHtml = Object.entries(attributes).map(([key, value]) => `
+                <li class="flex justify-between font-mono p-2 bg-rpg-dark/50 rounded">
+                    <span class="capitalize">${key} (${attrAbreviations[key]})</span>
+                    <span class="text-rpg-accent font-bold">${value}</span>
+                </li>
+            `).join('');
+
+            // HTML para Perícias (incluindo bônus de treino)
+            const skillsHtml = Object.entries(skills).map(([name, data]) => {
+                const trained = data.trained ? 'text-green-400 font-extrabold' : 'text-rpg-light/70';
+                const trainedLabel = data.trained ? ' (T)' : '';
+                return `
+                    <li class="flex justify-between font-mono p-2 bg-rpg-dark/50 rounded">
+                        <span class="capitalize ${trained}">${name}${trainedLabel} (${data.attr})</span>
+                        <span class="text-rpg-accent font-bold">${data.bonus >= 0 ? '+' : ''}${data.bonus}</span>
+                    </li>
+                `;
+            }).join('');
+            
+            const rules = classRules[charData.stats.class];
+
+            let sheetHtml = `
+                <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6 mb-6">
+                    <!-- A tag <img> suporta a URL Base64 gerada pelo upload -->
+                    <img src="${photoUrl}" alt="Foto do Personagem" class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-full border-4 border-rpg-accent shadow-lg" onerror="this.onerror=null; this.src='https://placehold.co/150x150/1e293b/f8fafc?text=Foto';">
+                    <div class="text-center md:text-left">
+                        <p class="text-3xl font-extrabold text-rpg-light">${name}</p>
+                        <p class="text-xl font-bold text-rpg-accent">${stats.class} | NEX ${stats.nex}%</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 mb-6 text-center border-t border-b border-rpg-secondary/50 py-4">
+                    <div class="p-3 bg-rpg-accent/20 rounded-lg">
+                        <p class="text-sm font-semibold text-rpg-accent">PV MAX</p>
+                        <p class="text-3xl font-extrabold text-rpg-light">${stats.pv_max}</p>
+                        <p class="text-xs text-rpg-secondary/70 italic">+${rules.hpScale} PV/Nível</p>
+                    </div>
+                    <div class="p-3 bg-rpg-accent/20 rounded-lg">
+                        <p class="text-sm font-semibold text-rpg-accent">PE MAX</p>
+                        <p class="text-3xl font-extrabold text-rpg-light">${stats.pe_max}</p>
+                        <p class="text-xs text-rpg-secondary/70 italic">+${rules.peScale} PE/Nível</p>
+                    </div>
+                    <div class="p-3 bg-rpg-accent/20 rounded-lg">
+                        <p class="text-sm font-semibold text-rpg-accent">SAN MAX</p>
+                        <p class="text-3xl font-extrabold text-rpg-light">${stats.san_max}</p>
+                        <p class="text-xs text-rpg-secondary/70 italic">+${rules.sanScale} SAN/Nível</p>
+                    </div>
+                </div>
+
+                <p class="text-xl font-bold text-rpg-light mb-1 border-b border-rpg-secondary/50 pb-1">Atributos (Valor):</p>
+                <ul class="ml-4 grid grid-cols-3 gap-2 mb-4">
+                    ${attrHtml}
+                </ul>
+
+                <p class="text-xl font-bold text-rpg-light mb-1 border-b border-rpg-secondary/50 pb-1 mt-4">Proficiências:</p>
+                <p class="text-rpg-light/70 ml-4 mb-4">${proficiencies.join(', ')}</p>
+
+                <p class="text-xl font-bold text-rpg-light mb-1 border-b border-rpg-secondary/50 pb-1 mt-4">Perícias (Bônus Final):</p>
+                <p class="text-sm text-rpg-secondary/70 ml-4 mb-2">Bônus final = Base (${currentClass === 'Ocultista' ? '+1' : 'Atributo - 1'}) + 5 se Treinada.</p>
+                <ul class="ml-4 grid grid-cols-2 gap-2">
+                    ${skillsHtml}
+                </ul>
+
+                <p class="text-xl font-bold text-rpg-light mb-1 border-b border-rpg-secondary/50 pb-1 mt-4">História / Origem:</p>
+                <p class="text-rpg-light/70 ml-4 italic whitespace-pre-wrap">${history}</p>
+            `;
+
+            sheetContent.innerHTML = sheetHtml;
+            document.getElementById('final-sheet').classList.remove('hidden');
+            document.getElementById('export-button').classList.remove('hidden');
+            document.getElementById('export-message').classList.remove('hidden');
+            
+            document.getElementById('final-sheet').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Função para exportar os dados do personagem como um arquivo JSON (.rpgdata) (mantida a original)
+        function exportCharacter() {
+            const charData = collectCharacterData();
+            const dataStr = JSON.stringify(charData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${charData.name.replace(/\s/g, '_')}_ficha.rpgdata`;
+            
+            // Simula um clique para iniciar o download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Mensagem simples de feedback
+            console.log(`Ficha de ${charData.name} exportada com sucesso!`);
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            updateButtons();
+            calculateNex(); 
+            updateSkills(); 
+            selectClass('Especialista'); 
+        });
+
+    </script>
+</body>
+</html>
