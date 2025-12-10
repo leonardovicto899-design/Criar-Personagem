@@ -93,14 +93,17 @@
                 <span id="pointsRemaining" class="text-rpg-accent text-xl font-extrabold">4</span>
                 <span class="text-sm font-normal text-rpg-secondary">Pontos Restantes</span>
             </h2>
-            <p class="text-sm text-rpg-secondary mb-4">Cada atributo começa com 1. Você tem 4 pontos para distribuir, com máximo de 3 em cada atributo.</p>
+            <p class="text-sm text-rpg-secondary mb-4">Cada atributo começa com 1. Você tem 4 pontos para distribuir, com máximo de 3 em cada atributo. **Pode zerar atributos (0), mas deve usar todos os 4 pontos.**</p>
+            <div id="points-status" class="text-center font-bold text-sm mb-4 text-rpg-dark">Status: Distribua os 4 pontos.</div>
+
 
             <div id="attributes" class="space-y-3">
                 <!-- Atributos: FOR, VIG, AGI, INT, PRE -->
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="forca">
                     <span class="font-semibold w-1/3">FORÇA (FOR)</span>
                     <div class="flex items-center space-x-3">
-                        <button class="attr-button decrease" onclick="updateAttribute('forca', -1)" disabled>-</button>
+                        <!-- Removido o 'disabled' inicial, pois começa em 1 e pode ir para 0 -->
+                        <button class="attr-button decrease" onclick="updateAttribute('forca', -1)">-</button>
                         <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
                         <button class="attr-button increase" onclick="updateAttribute('forca', 1)">+</button>
                     </div>
@@ -108,7 +111,7 @@
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="vigor">
                     <span class="font-semibold w-1/3">VIGOR (VIG)</span>
                     <div class="flex items-center space-x-3">
-                        <button class="attr-button decrease" onclick="updateAttribute('vigor', -1)" disabled>-</button>
+                        <button class="attr-button decrease" onclick="updateAttribute('vigor', -1)">-</button>
                         <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
                         <button class="attr-button increase" onclick="updateAttribute('vigor', 1)">+</button>
                     </div>
@@ -116,7 +119,7 @@
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="agilidade">
                     <span class="font-semibold w-1/3">AGILIDADE (AGI)</span>
                     <div class="flex items-center space-x-3">
-                        <button class="attr-button decrease" onclick="updateAttribute('agilidade', -1)" disabled>-</button>
+                        <button class="attr-button decrease" onclick="updateAttribute('agilidade', -1)">-</button>
                         <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
                         <button class="attr-button increase" onclick="updateAttribute('agilidade', 1)">+</button>
                     </div>
@@ -124,7 +127,7 @@
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="intelecto">
                     <span class="font-semibold w-1/3">INTELECTO (INT)</span>
                     <div class="flex items-center space-x-3">
-                        <button class="attr-button decrease" onclick="updateAttribute('intelecto', -1)" disabled>-</button>
+                        <button class="attr-button decrease" onclick="updateAttribute('intelecto', -1)">-</button>
                         <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
                         <button class="attr-button increase" onclick="updateAttribute('intelecto', 1)">+</button>
                     </div>
@@ -132,7 +135,7 @@
                 <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm" data-attr="presenca">
                     <span class="font-semibold w-1/3">PRESENÇA (PRE)</span>
                     <div class="flex items-center space-x-3">
-                        <button class="attr-button decrease" onclick="updateAttribute('presenca', -1)" disabled>-</button>
+                        <button class="attr-button decrease" onclick="updateAttribute('presenca', -1)">-</button>
                         <span class="attribute-value text-xl font-bold w-6 text-center" data-value="1">1</span>
                         <button class="attr-button increase" onclick="updateAttribute('presenca', 1)">+</button>
                     </div>
@@ -271,7 +274,7 @@
 
         <!-- Seção 4: Ficha Final e Exportação -->
         <div class="text-center space-y-4">
-            <button onclick="generateSheet()" class="px-8 py-3 bg-rpg-accent text-rpg-light font-bold text-lg rounded-xl shadow-lg hover:bg-red-700 transition duration-200 transform hover:scale-[1.02] active:scale-95">
+            <button onclick="generateSheet()" id="generate-button" class="px-8 py-3 bg-rpg-accent text-rpg-light font-bold text-lg rounded-xl shadow-lg hover:bg-red-700 transition duration-200 transform hover:scale-[1.02] active:scale-95">
                 Gerar Ficha Resumo
             </button>
             <button onclick="exportCharacter()" id="export-button" class="px-6 py-3 bg-rpg-dark text-rpg-light font-bold text-lg rounded-xl shadow-lg hover:bg-rpg-secondary transition duration-200 transform hover:scale-[1.02] active:scale-95 hidden">
@@ -291,10 +294,9 @@
     </div>
 
     <script>
-        // Variável para armazenar a imagem em Base64 para exportação
         let characterPhotoBase64 = null;
         
-        // Objeto para rastrear os valores iniciais e a distribuição de pontos
+        // Valores iniciais dos atributos (todos em 1)
         const attributes = {
             forca: 1,
             vigor: 1,
@@ -302,13 +304,23 @@
             intelecto: 1,
             presenca: 1
         };
-        let points = 4; // Pontos para distribuir
-        const MAX_ATTRIBUTE_VALUE = 3;
+        
+        // A soma inicial de todos os atributos é 5.
+        const STARTING_SUM = 5; 
+        let currentSum = 5; 
+        
+        // O total de pontos que o jogador DEVE distribuir.
+        const POINTS_TO_SPEND = 4; 
+        // A soma final que deve ser atingida (5 + 4 = 9).
+        const REQUIRED_FINAL_SUM = STARTING_SUM + POINTS_TO_SPEND;
+        
+        // O valor máximo individual para um atributo.
+        const MAX_ATTRIBUTE_VALUE = 3; 
         const MAX_NEX = 5;
-        let currentClass = 'Especialista'; // Classe selecionada
-        let trainedSkills = []; // Lista final das perícias treinadas
 
-        // Mapeamento de Atributos para abreviação (usado no display de perícias)
+        let currentClass = 'Especialista'; 
+        let trainedSkills = []; 
+
         const attrAbreviations = {
             forca: 'FOR', vigor: 'VIG', agilidade: 'AGI', intelecto: 'INT', presenca: 'PRE',
         };
@@ -346,14 +358,12 @@
             Tática: 'intelecto', Tecnologia: 'intelecto', Vontade: 'presenca',
         };
         
-        // NOVO: Função para carregar e exibir a foto localmente
         function handleFileUpload(event) {
             const file = event.target.files[0];
             const imagePreview = document.getElementById('image-preview');
             const placeholderText = document.getElementById('placeholder-text');
             const errorMessage = document.getElementById('photo-error-message');
 
-            // Limpa o estado e a mensagem de erro
             errorMessage.classList.add('hidden');
             characterPhotoBase64 = null; 
 
@@ -369,14 +379,12 @@
                 const reader = new FileReader();
 
                 reader.onload = (e) => {
-                    // Armazena a imagem em Base64 para inclusão nos dados do personagem
                     characterPhotoBase64 = e.target.result; 
                     
                     imagePreview.setAttribute('src', characterPhotoBase64);
                     imagePreview.style.display = 'block'; 
                     placeholderText.style.display = 'none'; 
                     
-                    // Atualiza a ficha se já estiver visível
                     if (!document.getElementById('final-sheet').classList.contains('hidden')) {
                         generateSheet();
                     }
@@ -396,76 +404,99 @@
             }
         }
 
-        // Função principal para atualizar atributos (mantida a original)
+        // Função principal para atualizar atributos (Lógica de pontos revisada)
         function updateAttribute(attrName, change) {
             const currentValue = attributes[attrName];
             const newValue = currentValue + change;
             
-            if (newValue < 1 || newValue > MAX_ATTRIBUTE_VALUE) return;
-            if (change > 0 && points <= 0) return;
+            // 1. Lógica de limite individual (0 a 3)
+            // Permite zerar o atributo (newValue >= 0)
+            if (newValue < 0 || newValue > MAX_ATTRIBUTE_VALUE) return;
             
+            // 2. Se estiver aumentando, verifica o limite total (Soma final deve ser 9)
+            if (change > 0 && currentSum >= REQUIRED_FINAL_SUM) return;
+            
+            // Aplica a mudança
             attributes[attrName] = newValue;
-            points -= change;
+            currentSum += change; // Atualiza a soma total
 
-            document.getElementById('pointsRemaining').textContent = points;
+            const pointsRemaining = REQUIRED_FINAL_SUM - currentSum;
+            document.getElementById('pointsRemaining').textContent = pointsRemaining;
             
             const attrElement = document.querySelector(`[data-attr="${attrName}"] .attribute-value`);
             attrElement.textContent = newValue;
             attrElement.dataset.value = newValue;
 
+            updatePointsStatus(pointsRemaining);
             updateButtons();
             updateSkills(); 
             updateDerivedStats();
         }
+
+        function updatePointsStatus(pointsRemaining) {
+            const statusElement = document.getElementById('points-status');
+            const generateButton = document.getElementById('generate-button');
+            
+            if (pointsRemaining === 0) {
+                statusElement.textContent = "Status: Distribuição COMPLETA. (Soma Total = 9)";
+                statusElement.classList.remove('text-red-500');
+                statusElement.classList.add('text-green-600');
+                generateButton.disabled = false;
+            } else {
+                statusElement.textContent = `Status: Faltam ${pointsRemaining} pontos para distribuir. (Soma Total deve ser ${REQUIRED_FINAL_SUM})`;
+                statusElement.classList.remove('text-green-600');
+                statusElement.classList.add('text-red-500');
+                generateButton.disabled = true;
+            }
+        }
         
-        // Função para manipular a troca de classe (mantida a original)
         function selectClass(className) {
             currentClass = className;
             updateDerivedStats();
             updateTrainedSkillsUI();
         }
 
-        // Função para atualizar as estatísticas derivadas (PV, PE, SAN) (mantida a original)
+        // Atualização de Stats Derivados (Agora usa atributos flexíveis)
         function updateDerivedStats() {
             const rules = classRules[currentClass];
             const vig = attributes.vigor;
             const pre = attributes.presenca;
             
-            // As regras de PV, PE e SAN são para 5% de NEX (primeiro nível)
-            const hp = rules.hpBase + vig; 
-            const pe = rules.peBase + pre;
-            const san = rules.sanBase;
+            // PV, PE, SAN: O mínimo é a base da classe (para o caso de atributo 0 ou 1)
+            const hp = rules.hpBase + Math.max(0, vig); // PV mínimo = HP Base + 0
+            const pe = rules.peBase + Math.max(0, pre); // PE mínimo = PE Base + 0
+            const san = rules.sanBase; // SAN não depende do atributo (em 5% de NEX)
 
-            // Display stats
             document.getElementById('hp-value').textContent = hp;
             document.getElementById('pe-value').textContent = pe;
             document.getElementById('san-value').textContent = san;
 
-            // Display scaling
             document.getElementById('hp-scale').textContent = `(+${rules.hpScale} PV/Nível)`;
             document.getElementById('pe-scale').textContent = `(+${rules.peScale} PE/Nível)`;
             document.getElementById('san-scale').textContent = `(+${rules.sanScale} SAN/Nível)`;
             
-            // Display proficiencies
             document.getElementById('class-proficiencies').textContent = rules.proficiencies.join(', ');
             
             updateTrainedSkillsUI();
         }
 
-        // Função para atualizar o estado dos botões de incremento/decremento (mantida a original)
+        // Atualização do estado dos botões (Permitindo 0, mas limitado a 3)
         function updateButtons() {
+            const isMaxSum = currentSum >= REQUIRED_FINAL_SUM;
+            
             for (const attrName in attributes) {
                 const attrDiv = document.querySelector(`[data-attr="${attrName}"]`);
                 const increaseButton = attrDiv.querySelector('.increase');
                 const decreaseButton = attrDiv.querySelector('.decrease');
                 const currentValue = attributes[attrName];
 
-                increaseButton.disabled = points <= 0 || currentValue >= MAX_ATTRIBUTE_VALUE;
-                decreaseButton.disabled = currentValue <= 1;
+                // Aumentar: Desativado se atingiu o máximo individual (3) OU se atingiu o máximo total (9)
+                increaseButton.disabled = currentValue >= MAX_ATTRIBUTE_VALUE || isMaxSum;
+                // Diminuir: Desativado se atingiu o mínimo individual (0)
+                decreaseButton.disabled = currentValue <= 0;
             }
         }
 
-        // Função para calcular o NEX com base no formulário (mantida a original)
         function calculateNex() {
             let totalNex = 0;
             
@@ -473,28 +504,31 @@
             const q2Value = parseInt(document.querySelector('input[name="q2"]:checked').value);
             
             totalNex = q1Value + q2Value;
-            totalNex = Math.min(totalNex, MAX_NEX); // Limite a 5%
+            totalNex = Math.min(totalNex, MAX_NEX); 
             
             document.getElementById('nex-display').textContent = `NEX: ${totalNex}%`;
             document.getElementById('nex-bar').style.width = `${(totalNex / MAX_NEX) * 100}%`;
         }
 
-        // Função para calcular e atualizar o valor das perícias não treinadas (mantida a original)
+        // Atualização de Perícias (usa o valor real do atributo, que pode ser 0)
         function updateSkills() {
             const skillsContainer = document.getElementById('skills-list');
             skillsContainer.innerHTML = ''; 
 
             for (const [skillName, attrKey] of Object.entries(skillMapping)) {
                 const attrValue = attributes[attrKey];
+                // Bônus base é Atributo - 1. Se Attr for 0, o bônus é -1.
                 const bonusValue = attrValue - 1; 
                 const attrAbrev = attrAbreviations[attrKey];
                 
+                const bonusText = bonusValue >= 0 ? `+${bonusValue}` : `${bonusValue}`; // Exibe -1, +2, etc.
+
                 const skillItem = `
                     <div class="flex justify-between items-center p-2 rounded-lg bg-white/50 hover:bg-white transition duration-100 shadow-sm">
                         <span class="font-medium text-rpg-dark truncate">${skillName}</span>
                         <div class="flex items-center space-x-2">
                            <span class="text-xs font-semibold text-rpg-secondary uppercase">${attrAbrev}</span>
-                           <span class="text-lg font-bold w-6 text-right text-rpg-accent" data-skill-bonus="${skillName}">+${bonusValue}</span>
+                           <span class="text-lg font-bold w-6 text-right text-rpg-accent" data-skill-bonus="${skillName}">${bonusText}</span>
                         </div>
                     </div>
                 `;
@@ -502,7 +536,6 @@
             }
         }
         
-        // Função para gerar a interface de seleção de perícias treinadas (mantida a original)
         function updateTrainedSkillsUI() {
             const rules = classRules[currentClass];
             const int = attributes.intelecto;
@@ -513,15 +546,12 @@
             const mandatoryHtmlContainer = document.getElementById('mandatory-skills-list');
             mandatoryHtmlContainer.innerHTML = '';
             
-            // 1. Renderizar Perícias Obrigatórias e Escolhas Fixas
             const mandatoryOrChoiceSkills = [];
             rules.mandatorySkills.forEach(item => {
                 if (typeof item === 'string') {
-                    // Perícia fixa (Ocultismo, Vontade)
                     mandatoryHtmlContainer.innerHTML += `<span class="bg-rpg-accent/10 text-rpg-dark font-medium px-2 py-1 rounded">${item} (Fixo)</span>`;
                     mandatoryOrChoiceSkills.push(item);
                 } else if (item.choices) {
-                    // Grupo de escolha (Luta ou Pontaria)
                     const choiceId = `mandatory-${item.group.toLowerCase()}`;
                     const radios = item.choices.map(choice => `
                         <label class="inline-flex items-center mr-4">
@@ -538,7 +568,6 @@
                 }
             });
 
-            // 2. Renderizar Checkboxes para Perícias Livres
             const allSkills = Object.keys(skillMapping);
             const freeSkills = allSkills.filter(skill => !mandatoryOrChoiceSkills.includes(skill));
             
@@ -554,8 +583,6 @@
             updateTrainedSkillsList();
         }
 
-
-        // Função para compilar a lista final de perícias treinadas e aplicar limites (mantida a original)
         function updateTrainedSkillsList() {
             trainedSkills = [];
             const rules = classRules[currentClass];
@@ -563,10 +590,8 @@
             const maxFreeChoices = rules.skillBase + int;
             let currentFreeCount = 0;
             
-            // 1. Adicionar Perícias Obrigatórias Fixas
             rules.mandatorySkills.filter(s => typeof s === 'string').forEach(s => trainedSkills.push(s));
 
-            // 2. Adicionar Perícias Obrigatórias de Escolha (verifica se foi selecionado)
             rules.mandatorySkills.filter(s => s.choices).forEach(item => {
                 const choiceId = `mandatory-${item.group.toLowerCase()}`;
                 const selected = document.querySelector(`input[name="${choiceId}"]:checked`);
@@ -575,7 +600,6 @@
                 }
             });
 
-            // 3. Tratar as Escolhas Livres
             const freeCheckboxes = document.querySelectorAll('input[name="freeSkill"]');
             const selectedFreeSkills = [];
 
@@ -585,7 +609,6 @@
                 }
             });
             
-            // Aplica o limite e ajusta o estado dos checkboxes
             if (selectedFreeSkills.length > maxFreeChoices) {
                 const skillsToKeep = selectedFreeSkills.slice(0, maxFreeChoices);
                 const skillsToUncheck = selectedFreeSkills.slice(maxFreeChoices);
@@ -601,29 +624,24 @@
                 trainedSkills.push(...selectedFreeSkills);
             }
             
-            // 4. Atualizar estado dos Checkboxes (desabilitar se o máximo for atingido)
             freeCheckboxes.forEach(checkbox => {
-                checkbox.disabled = false; // Re-habilita por padrão
+                checkbox.disabled = false;
                 
                 if (currentFreeCount >= maxFreeChoices && !checkbox.checked) {
                     checkbox.disabled = true;
                 }
             });
 
-            // 5. Atualizar contador
             const remaining = maxFreeChoices - currentFreeCount;
             document.getElementById('skills-remaining-display').textContent = Math.max(0, remaining);
             
-            // 6. Atualizar a lista de revisão
             document.getElementById('selected-trained-skills-display').textContent = trainedSkills.join(', ') || 'Nenhuma selecionada.';
             
-            // 7. Re-gerar ficha se estiver visível
             if (!document.getElementById('final-sheet').classList.contains('hidden')) {
                 generateSheet();
             }
         }
 
-        // Função para coletar todos os dados e estruturar o objeto do personagem
         function collectCharacterData() {
             const rules = classRules[currentClass];
             const vig = attributes.vigor;
@@ -637,27 +655,32 @@
                     attr: attrAbreviations[attrKey],
                     base: attributes[attrKey] - 1,
                     trained: trainedSkills.includes(skillName),
-                    // Bônus final = Base + 5 se treinado, caso contrário, Base
                     bonus: trainedSkills.includes(skillName) ? (attributes[attrKey] - 1 + 5) : (attributes[attrKey] - 1)
                 };
             }
 
-            // NOVO: Usa a string Base64 se estiver disponível, senão usa um placeholder
             const finalPhotoUrl = characterPhotoBase64 || 'https://placehold.co/150x150/1e293b/f8fafc?text=Foto';
+            
+            // Usamos Math.max(0, attr) para garantir que o cálculo de PV/PE comece no mínimo
+            const pv_max = rules.hpBase + Math.max(0, vig);
+            const pe_max = rules.peBase + Math.max(0, pre);
+
 
             return {
+                id: crypto.randomUUID(), // Adiciona um ID único para o gerenciador
                 name: document.getElementById('charName').value.trim() || "Personagem Sem Nome",
-                photoUrl: finalPhotoUrl, // Agora é a string Base64 ou URL do placeholder
+                photoUrl: finalPhotoUrl, 
                 history: document.getElementById('charHistory').value.trim() || "História não preenchida.",
-                // Estatísticas principais para serem gerenciadas
+                
                 stats: {
                     nex: nexValue,
                     class: currentClass,
-                    pv_max: rules.hpBase + vig,
-                    pe_max: rules.peBase + pre,
+                    pv_max: pv_max,
+                    pe_max: pe_max,
                     san_max: rules.sanBase,
-                    pv_current: rules.hpBase + vig, // Começa com o máximo
-                    pe_current: rules.peBase + pre,
+                    // PV/PE/SAN atuais são iguais ao máximo no momento da criação
+                    pv_current: pv_max, 
+                    pe_current: pe_max,
                     san_current: rules.sanBase,
                 },
                 attributes: attributes,
@@ -666,14 +689,12 @@
             };
         }
 
-        // Função para gerar a ficha resumo final (mantida a original, mas usando a foto Base64)
         function generateSheet() {
             const charData = collectCharacterData();
             
             const sheetContent = document.getElementById('sheet-content');
             const { name, photoUrl, history, stats, attributes, proficiencies, skills } = charData;
 
-            // HTML para Atributos
             const attrHtml = Object.entries(attributes).map(([key, value]) => `
                 <li class="flex justify-between font-mono p-2 bg-rpg-dark/50 rounded">
                     <span class="capitalize">${key} (${attrAbreviations[key]})</span>
@@ -681,14 +702,14 @@
                 </li>
             `).join('');
 
-            // HTML para Perícias (incluindo bônus de treino)
             const skillsHtml = Object.entries(skills).map(([name, data]) => {
                 const trained = data.trained ? 'text-green-400 font-extrabold' : 'text-rpg-light/70';
                 const trainedLabel = data.trained ? ' (T)' : '';
+                const bonusText = data.bonus >= 0 ? `+${data.bonus}` : `${data.bonus}`;
                 return `
                     <li class="flex justify-between font-mono p-2 bg-rpg-dark/50 rounded">
                         <span class="capitalize ${trained}">${name}${trainedLabel} (${data.attr})</span>
-                        <span class="text-rpg-accent font-bold">${data.bonus >= 0 ? '+' : ''}${data.bonus}</span>
+                        <span class="text-rpg-accent font-bold">${bonusText}</span>
                     </li>
                 `;
             }).join('');
@@ -697,7 +718,6 @@
 
             let sheetHtml = `
                 <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6 mb-6">
-                    <!-- A tag <img> suporta a URL Base64 gerada pelo upload -->
                     <img src="${photoUrl}" alt="Foto do Personagem" class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-full border-4 border-rpg-accent shadow-lg" onerror="this.onerror=null; this.src='https://placehold.co/150x150/1e293b/f8fafc?text=Foto';">
                     <div class="text-center md:text-left">
                         <p class="text-3xl font-extrabold text-rpg-light">${name}</p>
@@ -749,7 +769,6 @@
             document.getElementById('final-sheet').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Função para exportar os dados do personagem como um arquivo JSON (.rpgdata) (mantida a original)
         function exportCharacter() {
             const charData = collectCharacterData();
             const dataStr = JSON.stringify(charData, null, 2);
@@ -760,12 +779,10 @@
             link.href = url;
             link.download = `${charData.name.replace(/\s/g, '_')}_ficha.rpgdata`;
             
-            // Simula um clique para iniciar o download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            // Mensagem simples de feedback
             console.log(`Ficha de ${charData.name} exportada com sucesso!`);
         }
 
@@ -775,6 +792,7 @@
             calculateNex(); 
             updateSkills(); 
             selectClass('Especialista'); 
+            updatePointsStatus(POINTS_TO_SPEND); // Inicializa o status
         });
 
     </script>
